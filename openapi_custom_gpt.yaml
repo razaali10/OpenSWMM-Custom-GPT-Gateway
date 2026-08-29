@@ -1,0 +1,1372 @@
+# Generated from the live /openapi.json (see docs/CUSTOM_GPT_SETUP.md).
+# Edit only the servers: URL below before importing into GPT Actions --
+# everything else should be regenerated, not hand-edited, when the app changes.
+openapi: 3.1.0
+info:
+  title: OpenSWMM Custom GPT Gateway
+  description: Dynamic dispatcher gateway exposing the full ~565-tool OpenSWMM MCP registry through ~11
+    grouped Actions plus discovery and engineering endpoints. Use searchOpenSwmmTools/getOpenSwmmToolSchema
+    to find the right tool and its real arguments, then call the matching call<Group>Tool Action. Never
+    fabricate a tool name or argument -- always discover it first.
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      tags:
+      - system
+      summary: Liveness check -- never requires auth
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Healthcheck
+      security: []
+  /api/v1/status:
+    get:
+      tags:
+      - system
+      summary: Liveness plus upstream MCP connectivity and live tool count -- never requires auth
+      operationId: getGatewayStatus
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Getgatewaystatus
+      security: []
+  /api/v1/mcp/namespaces:
+    get:
+      tags:
+      - discovery
+      summary: List every tool namespace and action group on the live upstream server, with counts
+      operationId: listOpenSwmmNamespaces
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespacesResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/mcp/search:
+    post:
+      tags:
+      - discovery
+      summary: Search the live tool registry by name, namespace, description, or argument names
+      operationId: searchOpenSwmmTools
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolSearchRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolSearchResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/mcp/tools/{tool_name}:
+    get:
+      tags:
+      - discovery
+      summary: Get one tool's live description, input schema, action group, and safety classification
+      operationId: getOpenSwmmToolSchema
+      parameters:
+      - name: tool_name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Tool Name
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolSchemaResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/core:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a lifecycle_*/model_*/datetime_* tool
+      description: 'Dispatches to any tool whose action group is ''core'' (namespaces: lifecycle_, model_,
+        datetime_). Rejects tool_name values that belong to a different action group -- call the correct
+        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
+      operationId: callSwmmCoreTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/model-builder:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a building_*/editing_*/tables_* tool
+      description: 'Dispatches to any tool whose action group is ''model-builder'' (namespaces: building_,
+        editing_, tables_). Rejects tool_name values that belong to a different action group -- call the
+        correct /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
+      operationId: callModelBuilderTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/hydrology:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a subcatchments_*/climate_*/inflows_* tool
+      description: 'Dispatches to any tool whose action group is ''hydrology'' (namespaces: subcatchments_,
+        climate_, inflows_). Rejects tool_name values that belong to a different action group -- call
+        the correct /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
+      operationId: callHydrologyTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/hydraulics:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a nodes_*/links_*/xsect_* tool
+      description: 'Dispatches to any tool whose action group is ''hydraulics'' (namespaces: nodes_, links_,
+        xsect_). Rejects tool_name values that belong to a different action group -- call the correct
+        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
+      operationId: callHydraulicsTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/forcing-controls:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a forcing_*/controls_* tool
+      description: 'Dispatches to any tool whose action group is ''forcing-controls'' (namespaces: forcing_,
+        controls_). Rejects tool_name values that belong to a different action group -- call the correct
+        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
+      operationId: callForcingControlsTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/results:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a query_*/analysis_* tool
+      description: 'Dispatches to any tool whose action group is ''results'' (namespaces: query_, analysis_).
+        Rejects tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
+        endpoint instead, per the error''s correct_action_group field.'
+      operationId: callResultsTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/twod:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a twod_* tool
+      description: 'Dispatches to any tool whose action group is ''twod'' (namespaces: twod_). Rejects
+        tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
+        endpoint instead, per the error''s correct_action_group field.'
+      operationId: call2DTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/spatial:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a spatial_*/geopackage_* tool
+      description: 'Dispatches to any tool whose action group is ''spatial'' (namespaces: spatial_, geopackage_).
+        Rejects tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
+        endpoint instead, per the error''s correct_action_group field.'
+      operationId: callSpatialTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/water-quality:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a quality_*/pollutants_* tool
+      description: 'Dispatches to any tool whose action group is ''water-quality'' (namespaces: quality_,
+        pollutants_). Rejects tool_name values that belong to a different action group -- call the correct
+        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
+      operationId: callWaterQualityTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/infrastructure:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call an infrastructure_* tool
+      description: 'Dispatches to any tool whose action group is ''infrastructure'' (namespaces: infrastructure_).
+        Rejects tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
+        endpoint instead, per the error''s correct_action_group field.'
+      operationId: callInfrastructureTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tools/optimization:
+    post:
+      tags:
+      - grouped-tools
+      summary: Call a hotstart_*/gym_* tool
+      description: 'Dispatches to any tool whose action group is ''optimization'' (namespaces: hotstart_,
+        gym_). Rejects tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
+        endpoint instead, per the error''s correct_action_group field.'
+      operationId: callOptimizationTool
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCallRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCallResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/model-inventory:
+    get:
+      tags:
+      - engineering
+      summary: Structured element counts and 2D mesh status for an already-open session
+      operationId: getModelInventory
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelInventoryResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/validate-model:
+    post:
+      tags:
+      - engineering
+      summary: Report the upstream parser's open diagnostics (errors/warnings) for a session
+      operationId: validateModel
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelValidateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/run-simulation:
+    post:
+      tags:
+      - engineering
+      summary: Run an already-open session's simulation to completion (synchronous)
+      operationId: runSimulation
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationRunResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/simulation-integrity:
+    get:
+      tags:
+      - engineering
+      summary: Raw continuity-error and numerical-stability metrics -- never a bare pass/fail
+      operationId: getSimulationIntegrity
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationIntegrityResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/flooding-analysis:
+    get:
+      tags:
+      - engineering
+      summary: Flooded nodes ranked by volume, from analysis_get_flooding_summary
+      operationId: analyzeFlooding
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FloodingAnalysisResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/summary:
+    get:
+      tags:
+      - engineering
+      summary: Composed inventory + integrity + flooding + 2D summary, with a limitations disclaimer
+      operationId: getEngineeringSummary
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EngineeringSummaryResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/compare-scenarios:
+    post:
+      tags:
+      - engineering
+      summary: Diff continuity results between two already-run upstream sessions
+      operationId: compareScenarios
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScenarioCompareRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioCompareResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/twod-summary:
+    get:
+      tags:
+      - engineering
+      summary: 2D mesh size and surface totals for a session, if the 2D surface is active
+      operationId: get2DSummary
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoDSummaryResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/twod-mass-balance:
+    get:
+      tags:
+      - engineering
+      summary: Detailed 2D mass-balance terms for a session, if the 2D surface is active
+      operationId: get2DMassBalance
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoDMassBalanceResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/engineering/twod-coupling:
+    get:
+      tags:
+      - engineering
+      summary: 1D/2D coupling map for a session, if the 2D surface is active
+      operationId: get2DCoupling
+      parameters:
+      - name: session_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoDCouplingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    EngineeringSummaryResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        inventory:
+          additionalProperties: true
+          type: object
+          title: Inventory
+        integrity:
+          additionalProperties: true
+          type: object
+          title: Integrity
+        flooding:
+          additionalProperties: true
+          type: object
+          title: Flooding
+        twod_active:
+          type: boolean
+          title: Twod Active
+        limitations:
+          items:
+            type: string
+          type: array
+          title: Limitations
+      type: object
+      required:
+      - session_id
+      - inventory
+      - integrity
+      - flooding
+      - twod_active
+      - limitations
+      title: EngineeringSummaryResponse
+    FloodedNode:
+      properties:
+        node_id:
+          type: string
+          title: Node Id
+        total_flood_volume:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Total Flood Volume
+        max_depth:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Depth
+        time_flooded:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Time Flooded
+      type: object
+      required:
+      - node_id
+      - total_flood_volume
+      - max_depth
+      - time_flooded
+      title: FloodedNode
+    FloodingAnalysisResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        flooded_node_count:
+          type: integer
+          title: Flooded Node Count
+        flooded_nodes:
+          items:
+            $ref: '#/components/schemas/FloodedNode'
+          type: array
+          title: Flooded Nodes
+      type: object
+      required:
+      - session_id
+      - flooded_node_count
+      - flooded_nodes
+      title: FloodingAnalysisResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ModelInventoryResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        counts:
+          additionalProperties: true
+          type: object
+          title: Counts
+        twod_active:
+          type: boolean
+          title: Twod Active
+      type: object
+      required:
+      - session_id
+      - counts
+      - twod_active
+      title: ModelInventoryResponse
+    ModelValidateResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        valid:
+          type: boolean
+          title: Valid
+        errors:
+          items:
+            type: string
+          type: array
+          title: Errors
+        warnings:
+          items:
+            type: string
+          type: array
+          title: Warnings
+      type: object
+      required:
+      - session_id
+      - valid
+      - errors
+      - warnings
+      title: ModelValidateResponse
+    NamespacesResponse:
+      properties:
+        tool_count:
+          type: integer
+          title: Tool Count
+        namespaces:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Namespaces
+        action_groups:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Action Groups
+      type: object
+      required:
+      - tool_count
+      - namespaces
+      - action_groups
+      title: NamespacesResponse
+    ScenarioCompareRequest:
+      properties:
+        session_id_a:
+          type: string
+          title: Session Id A
+        session_id_b:
+          type: string
+          title: Session Id B
+      type: object
+      required:
+      - session_id_a
+      - session_id_b
+      title: ScenarioCompareRequest
+    ScenarioCompareResponse:
+      properties:
+        session_id_a:
+          type: string
+          title: Session Id A
+        session_id_b:
+          type: string
+          title: Session Id B
+        routing_continuity_error_a:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Routing Continuity Error A
+        routing_continuity_error_b:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Routing Continuity Error B
+      type: object
+      required:
+      - session_id_a
+      - session_id_b
+      - routing_continuity_error_a
+      - routing_continuity_error_b
+      title: ScenarioCompareResponse
+    SimulationIntegrityResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        completed:
+          type: boolean
+          title: Completed
+        runoff_continuity_error_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Runoff Continuity Error Pct
+        routing_continuity_error_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Routing Continuity Error Pct
+        max_courant:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Courant
+        pct_steps_not_converged:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Pct Steps Not Converged
+        overall_status:
+          type: string
+          title: Overall Status
+      type: object
+      required:
+      - session_id
+      - completed
+      - runoff_continuity_error_pct
+      - routing_continuity_error_pct
+      - max_courant
+      - pct_steps_not_converged
+      - overall_status
+      title: SimulationIntegrityResponse
+    SimulationRunResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        status:
+          type: string
+          title: Status
+        unsupported_fields:
+          items:
+            type: string
+          type: array
+          title: Unsupported Fields
+          default: []
+      type: object
+      required:
+      - session_id
+      - status
+      title: SimulationRunResponse
+    ToolCallRequest:
+      properties:
+        tool_name:
+          type: string
+          title: Tool Name
+        arguments:
+          additionalProperties: true
+          type: object
+          title: Arguments
+      type: object
+      required:
+      - tool_name
+      title: ToolCallRequest
+      description: 'Generic grouped-dispatcher request body -- deliberately not one
+
+        giant Pydantic model per tool (project brief section 28). The
+
+        upstream MCP server validates `arguments` against the real tool
+
+        schema; this gateway only validates that `tool_name` exists and
+
+        belongs to the endpoint''s action group before forwarding.'
+    ToolCallResponse:
+      properties:
+        success:
+          type: boolean
+          title: Success
+        tool_name:
+          type: string
+          title: Tool Name
+        result:
+          title: Result
+        warnings:
+          items:
+            type: string
+          type: array
+          title: Warnings
+      type: object
+      required:
+      - success
+      - tool_name
+      title: ToolCallResponse
+    ToolInfo:
+      properties:
+        name:
+          type: string
+          title: Name
+        namespace:
+          type: string
+          title: Namespace
+        action_group:
+          type: string
+          title: Action Group
+        description:
+          type: string
+          title: Description
+        operation_class:
+          type: string
+          title: Operation Class
+        destructive:
+          type: boolean
+          title: Destructive
+      type: object
+      required:
+      - name
+      - namespace
+      - action_group
+      - description
+      - operation_class
+      - destructive
+      title: ToolInfo
+    ToolSchemaResponse:
+      properties:
+        name:
+          type: string
+          title: Name
+        namespace:
+          type: string
+          title: Namespace
+        action_group:
+          type: string
+          title: Action Group
+        description:
+          type: string
+          title: Description
+        operation_class:
+          type: string
+          title: Operation Class
+        destructive:
+          type: boolean
+          title: Destructive
+        input_schema:
+          additionalProperties: true
+          type: object
+          title: Input Schema
+      type: object
+      required:
+      - name
+      - namespace
+      - action_group
+      - description
+      - operation_class
+      - destructive
+      title: ToolSchemaResponse
+    ToolSearchRequest:
+      properties:
+        query:
+          type: string
+          title: Query
+        namespace:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Namespace
+        limit:
+          type: integer
+          maximum: 100.0
+          minimum: 1.0
+          title: Limit
+          default: 10
+      type: object
+      required:
+      - query
+      title: ToolSearchRequest
+    ToolSearchResponse:
+      properties:
+        matches:
+          items:
+            $ref: '#/components/schemas/ToolInfo'
+          type: array
+          title: Matches
+      type: object
+      required:
+      - matches
+      title: ToolSearchResponse
+    TwoDCouplingResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        active:
+          type: boolean
+          title: Active
+        coupling_map:
+          additionalProperties: true
+          type: object
+          title: Coupling Map
+      type: object
+      required:
+      - session_id
+      - active
+      - coupling_map
+      title: TwoDCouplingResponse
+    TwoDMassBalanceResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        active:
+          type: boolean
+          title: Active
+        terms:
+          additionalProperties: true
+          type: object
+          title: Terms
+      type: object
+      required:
+      - session_id
+      - active
+      - terms
+      title: TwoDMassBalanceResponse
+    TwoDSummaryResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        active:
+          type: boolean
+          title: Active
+        mesh:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Mesh
+        totals:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Totals
+      type: object
+      required:
+      - session_id
+      - active
+      title: TwoDSummaryResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Required when AUTH_MODE=api_key (the default). Value is GATEWAY_API_KEY.
+servers:
+- url: https://REPLACE-WITH-YOUR-DEPLOYMENT.example.com
+  description: Edit this to your actual deployment URL before importing into GPT Actions.
+security:
+- BearerAuth: []
