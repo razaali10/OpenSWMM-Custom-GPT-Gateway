@@ -1366,7 +1366,7 @@ components:
       scheme: bearer
       description: Required when AUTH_MODE=api_key (the default). Value is GATEWAY_API_KEY.
 servers:
-- url: https://REPLACE-WITH-YOUR-DEPLOYMENT.example.com
-  description: Edit this to your actual deployment URL before importing into GPT Actions.
+- url: https://openswmm.onrender.com
+  description: Live Render deployment.
 security:
 - BearerAuth: []
