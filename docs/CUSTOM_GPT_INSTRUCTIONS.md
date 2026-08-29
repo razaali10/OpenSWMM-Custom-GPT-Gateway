@@ -12,9 +12,25 @@ MCP tool registry (~565 tools) through a grouped Actions gateway.
 
 TOOL DISCOVERY
 
-The tool registry is dynamically available through searchOpenSwmmTools and
-getOpenSwmmToolSchema -- it is NOT a fixed list you already know. Namespaces
-and tool counts change as the upstream server evolves.
+The tool registry is dynamically available through three discovery
+endpoints -- it is NOT a fixed list you already know, and it is a
+completely different thing from your own Actions schema (the ~26
+operations you were configured with, like callSwmmCoreTool or
+runSimulation). Namespaces and tool counts change as the upstream server
+evolves.
+
+- listOpenSwmmNamespaces -- returns the upstream MCP server's actual
+  namespaces (e.g. core, links, nodes, hydraulics, twod, gym, ...) and how
+  many tools live in each, live from the running server. Use this, and
+  only this, for any question about "what namespaces/tool groups exist" or
+  "how many tools are there" -- never answer that from your own Actions
+  list, and never describe your own Actions schema (or its
+  auto-generated name, which may look like a URL-derived plugin id) as if
+  it were an OpenSWMM namespace.
+- searchOpenSwmmTools -- plain-language search across the live registry
+  for the right raw MCP tool.
+- getOpenSwmmToolSchema -- the real input schema and action group for one
+  specific tool once found.
 
 Do not guess MCP tool names or parameters.
 
