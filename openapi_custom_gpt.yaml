@@ -145,11 +145,7 @@ paths:
       summary: Call a lifecycle_*/model_*/datetime_* tool
       description: 'Dispatches to any tool whose action group is ''core'' (namespaces: lifecycle_, model_,
         datetime_). Rejects tool_name values that belong to a different action group -- call the correct
-        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
       operationId: callSwmmCoreTool
       parameters:
       - name: authorization
@@ -186,11 +182,7 @@ paths:
       summary: Call a building_*/editing_*/tables_* tool
       description: 'Dispatches to any tool whose action group is ''model-builder'' (namespaces: building_,
         editing_, tables_). Rejects tool_name values that belong to a different action group -- call the
-        correct /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        correct /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
       operationId: callModelBuilderTool
       parameters:
       - name: authorization
@@ -227,11 +219,7 @@ paths:
       summary: Call a subcatchments_*/climate_*/inflows_* tool
       description: 'Dispatches to any tool whose action group is ''hydrology'' (namespaces: subcatchments_,
         climate_, inflows_). Rejects tool_name values that belong to a different action group -- call
-        the correct /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        the correct /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
       operationId: callHydrologyTool
       parameters:
       - name: authorization
@@ -268,11 +256,7 @@ paths:
       summary: Call a nodes_*/links_*/xsect_* tool
       description: 'Dispatches to any tool whose action group is ''hydraulics'' (namespaces: nodes_, links_,
         xsect_). Rejects tool_name values that belong to a different action group -- call the correct
-        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
       operationId: callHydraulicsTool
       parameters:
       - name: authorization
@@ -309,11 +293,7 @@ paths:
       summary: Call a forcing_*/controls_* tool
       description: 'Dispatches to any tool whose action group is ''forcing-controls'' (namespaces: forcing_,
         controls_). Rejects tool_name values that belong to a different action group -- call the correct
-        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
       operationId: callForcingControlsTool
       parameters:
       - name: authorization
@@ -350,11 +330,7 @@ paths:
       summary: Call a query_*/analysis_* tool
       description: 'Dispatches to any tool whose action group is ''results'' (namespaces: query_, analysis_).
         Rejects tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
-        endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        endpoint instead, per the error''s correct_action_group field.'
       operationId: callResultsTool
       parameters:
       - name: authorization
@@ -391,11 +367,7 @@ paths:
       summary: Call a twod_* tool
       description: 'Dispatches to any tool whose action group is ''twod'' (namespaces: twod_). Rejects
         tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
-        endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        endpoint instead, per the error''s correct_action_group field.'
       operationId: call2DTool
       parameters:
       - name: authorization
@@ -432,11 +404,7 @@ paths:
       summary: Call a spatial_*/geopackage_* tool
       description: 'Dispatches to any tool whose action group is ''spatial'' (namespaces: spatial_, geopackage_).
         Rejects tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
-        endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        endpoint instead, per the error''s correct_action_group field.'
       operationId: callSpatialTool
       parameters:
       - name: authorization
@@ -473,11 +441,7 @@ paths:
       summary: Call a quality_*/pollutants_* tool
       description: 'Dispatches to any tool whose action group is ''water-quality'' (namespaces: quality_,
         pollutants_). Rejects tool_name values that belong to a different action group -- call the correct
-        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        /api/v1/tools/{group} endpoint instead, per the error''s correct_action_group field.'
       operationId: callWaterQualityTool
       parameters:
       - name: authorization
@@ -514,11 +478,7 @@ paths:
       summary: Call an infrastructure_* tool
       description: 'Dispatches to any tool whose action group is ''infrastructure'' (namespaces: infrastructure_).
         Rejects tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
-        endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        endpoint instead, per the error''s correct_action_group field.'
       operationId: callInfrastructureTool
       parameters:
       - name: authorization
@@ -555,11 +515,7 @@ paths:
       summary: Call a hotstart_*/gym_* tool
       description: 'Dispatches to any tool whose action group is ''optimization'' (namespaces: hotstart_,
         gym_). Rejects tool_name values that belong to a different action group -- call the correct /api/v1/tools/{group}
-        endpoint instead, per the error''s correct_action_group field. `arguments` accepts every key from that tool''s
-        own input_schema (from getOpenSwmmToolSchema) by name, with no allow-list and no
-        special-cased or reserved keys -- session_id is an ordinary argument like any other, never
-        rejected. Example: {"tool_name": "building_create_model", "arguments": {"session_id":
-        "my_session"}}.'
+        endpoint instead, per the error''s correct_action_group field.'
       operationId: callOptimizationTool
       parameters:
       - name: authorization

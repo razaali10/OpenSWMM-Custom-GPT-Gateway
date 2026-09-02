@@ -58,12 +58,6 @@ for _group, (_op_id, _summary, _namespaces) in _GROUP_META.items():
             f"(namespaces: {_namespaces}). Rejects tool_name values that "
             "belong to a different action group -- call the correct "
             "/api/v1/tools/{group} endpoint instead, per the error's "
-            "correct_action_group field. "
-            "`arguments` accepts every key from that tool's own "
-            "input_schema (from getOpenSwmmToolSchema) by name, with no "
-            "allow-list and no special-cased or reserved keys -- session_id "
-            "is an ordinary argument like any other, never rejected. "
-            "Example: {\"tool_name\": \"building_create_model\", "
-            "\"arguments\": {\"session_id\": \"my_session\"}}."
+            "correct_action_group field."
         ),
     )
