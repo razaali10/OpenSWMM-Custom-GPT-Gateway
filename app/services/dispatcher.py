@@ -59,6 +59,56 @@ def _timeout_for(operation_class: str) -> float:
     return settings.openswmm_mcp_timeout_seconds
 
 
+async def call_upstream_tool(
+    client: MCPClient,
+    tool_name: str,
+    arguments: dict,
+    *,
+    timeout: float | None = None,
+    retry_safe: bool,
+):
+    """Call an upstream MCP tool and translate any failure into this
+    gateway's own GatewayError vocabulary (structured code/message/details,
+    proper 502/504 status) -- the one place BOTH the raw grouped dispatcher
+    (below) and every /api/v1/engineering/* convenience endpoint funnel
+    through, so neither path silently degrades to a bare 500.
+
+    A long-lived connection (see app/mcp/client.py's docstring) can go
+    stale between calls in a way that only surfaces once something tries
+    to use it -- observed live as a transport error on a call that had, in
+    fact, already reached and completed on the upstream server. Retrying
+    is only safe when `retry_safe=True` -- pass that only for operations
+    that are idempotent by nature (READ tools; never WRITE,
+    SIMULATION_CONTROL, DESTRUCTIVE, or OPTIMIZATION, since the failed
+    attempt may have already executed upstream)."""
+    try:
+        return await client.call_tool(tool_name, arguments, timeout=timeout)
+    except MCPTimeoutError as exc:
+        raise UpstreamTimeoutError(str(exc), {"tool_name": tool_name}) from exc
+    except MCPUpstreamError as exc:
+        raise UpstreamMCPError(
+            str(exc), {"tool_name": tool_name, "upstream_error_code": exc.tool_error_code}
+        ) from exc
+    except MCPConnectionError as exc:
+        if retry_safe:
+            logger.warning("Connection error on '%s', retrying once: %s", tool_name, exc)
+            try:
+                return await client.call_tool(tool_name, arguments, timeout=timeout)
+            except (MCPTimeoutError, MCPUpstreamError, MCPConnectionError) as retry_exc:
+                raise UpstreamMCPError(
+                    f"Retry after connection error also failed: {retry_exc}",
+                    {"tool_name": tool_name},
+                ) from retry_exc
+        raise UpstreamMCPError(
+            f"{exc} -- this call may not be safely retryable, so the request may "
+            "have already reached and executed on the upstream server before this "
+            "transport failure; verify actual state with a read-only tool "
+            "(e.g. getSimulationIntegrity, lifecycle_list_sessions) before assuming "
+            "it did not happen, and before retrying it yourself.",
+            {"tool_name": tool_name, "possibly_executed": True},
+        ) from exc
+
+
 async def dispatch(
     group: str,
     request: ToolCallRequest,
@@ -82,18 +132,16 @@ async def dispatch(
             {"tool_name": request.tool_name, "correct_action_group": tool.action_group},
         )
 
-    timeout = _timeout_for(tool.operation_class or "READ")
+    operation_class = tool.operation_class or "READ"
+    timeout = _timeout_for(operation_class)
     arguments = _parse_arguments(request.arguments)
 
-    try:
-        result = await client.call_tool(request.tool_name, arguments, timeout=timeout)
-    except MCPTimeoutError as exc:
-        raise UpstreamTimeoutError(str(exc), {"tool_name": request.tool_name}) from exc
-    except MCPUpstreamError as exc:
-        raise UpstreamMCPError(
-            str(exc), {"tool_name": request.tool_name, "upstream_error_code": exc.tool_error_code}
-        ) from exc
-    except MCPConnectionError as exc:
-        raise UpstreamMCPError(str(exc), {"tool_name": request.tool_name}) from exc
+    result = await call_upstream_tool(
+        client,
+        request.tool_name,
+        arguments,
+        timeout=timeout,
+        retry_safe=(operation_class == "READ"),
+    )
 
     return ToolCallResponse(success=True, tool_name=request.tool_name, result=result)

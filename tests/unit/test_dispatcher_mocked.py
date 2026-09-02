@@ -45,6 +45,24 @@ class FakeClient:
         return self._result
 
 
+class FlakyThenOkClient:
+    """Fails with the given error on its first N calls, then succeeds --
+    models a persistent connection that goes stale between calls but
+    recovers once reconnected on retry."""
+
+    def __init__(self, *, error: Exception, fail_times: int, result=None) -> None:
+        self._error = error
+        self._fail_times = fail_times
+        self._result = result
+        self.calls: list[tuple[str, dict, float | None]] = []
+
+    async def call_tool(self, tool_name, arguments, *, timeout=None):
+        self.calls.append((tool_name, arguments, timeout))
+        if len(self.calls) <= self._fail_times:
+            raise self._error
+        return self._result
+
+
 DESTRUCTIVE_TOOL = MCPTool(
     name="editing_delete_object",
     namespace="editing",
@@ -150,6 +168,45 @@ async def test_dispatch_translates_connection_error():
             client=client,
         )
     assert exc_info.value.status_code == 502
+
+
+@pytest.mark.asyncio
+async def test_dispatch_retries_once_on_connection_error_for_read_tool():
+    # READ tools are idempotent, so a stale-connection failure on the
+    # first attempt should be transparently recovered by one retry.
+    registry = FakeRegistry({"query_get_node_info": READ_TOOL})
+    client = FlakyThenOkClient(
+        error=MCPConnectionError("connection refused"), fail_times=1, result={"node_id": "J1"}
+    )
+    response = await dispatch(
+        "results",
+        ToolCallRequest(tool_name="query_get_node_info", arguments="{}"),
+        registry=registry,
+        client=client,
+    )
+    assert response.success is True
+    assert response.result == {"node_id": "J1"}
+    assert len(client.calls) == 2
+
+
+@pytest.mark.asyncio
+async def test_dispatch_never_retries_destructive_tool_on_connection_error():
+    # A DESTRUCTIVE/WRITE/SIMULATION_CONTROL/OPTIMIZATION call must never
+    # be silently retried -- the failed attempt may have already executed
+    # upstream, and retrying could double-apply it.
+    registry = FakeRegistry({"editing_delete_object": DESTRUCTIVE_TOOL})
+    client = FlakyThenOkClient(
+        error=MCPConnectionError("connection refused"), fail_times=1, result={"status": "deleted"}
+    )
+    with pytest.raises(UpstreamMCPError) as exc_info:
+        await dispatch(
+            "model-builder",
+            ToolCallRequest(tool_name="editing_delete_object", arguments="{}"),
+            registry=registry,
+            client=client,
+        )
+    assert exc_info.value.details.get("possibly_executed") is True
+    assert len(client.calls) == 1
 
 
 @pytest.mark.asyncio

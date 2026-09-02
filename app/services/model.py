@@ -11,13 +11,22 @@ dedicated upload endpoint.
 from __future__ import annotations
 
 from app.mcp.client import MCPClient
+from app.services.dispatcher import call_upstream_tool
 
 
 async def get_inventory(client: MCPClient, session_id: str) -> dict:
-    summary = await client.call_tool("query_get_system_summary", {"session_id": session_id})
-    nodes = await client.call_tool("query_get_node_info", {"session_id": session_id})
-    links = await client.call_tool("query_get_link_info", {"session_id": session_id})
-    twod = await client.call_tool("twod_get_mesh_summary", {"session_id": session_id})
+    summary = await call_upstream_tool(
+        client, "query_get_system_summary", {"session_id": session_id}, retry_safe=True
+    )
+    nodes = await call_upstream_tool(
+        client, "query_get_node_info", {"session_id": session_id}, retry_safe=True
+    )
+    links = await call_upstream_tool(
+        client, "query_get_link_info", {"session_id": session_id}, retry_safe=True
+    )
+    twod = await call_upstream_tool(
+        client, "twod_get_mesh_summary", {"session_id": session_id}, retry_safe=True
+    )
 
     node_list = nodes if isinstance(nodes, list) else [nodes]
     link_list = links if isinstance(links, list) else [links]
@@ -42,7 +51,9 @@ async def get_inventory(client: MCPClient, session_id: str) -> dict:
 
 
 async def validate_model(client: MCPClient, session_id: str) -> dict:
-    diagnostics = await client.call_tool("lifecycle_get_open_diagnostics", {"session_id": session_id})
+    diagnostics = await call_upstream_tool(
+        client, "lifecycle_get_open_diagnostics", {"session_id": session_id}, retry_safe=True
+    )
     errors = list(diagnostics.get("errors", []))
     warnings = list(diagnostics.get("warnings", []))
     return {

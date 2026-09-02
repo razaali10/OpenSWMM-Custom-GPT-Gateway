@@ -11,11 +11,15 @@ to hours here to match every other duration this gateway reports."""
 from __future__ import annotations
 
 from app.mcp.client import MCPClient
+from app.services.dispatcher import call_upstream_tool
 
 
 async def analyze_flooding(client: MCPClient, session_id: str) -> dict:
-    flooding = await client.call_tool(
-        "analysis_get_flooding_summary", {"session_id": session_id, "min_flood_volume": 0.0}
+    flooding = await call_upstream_tool(
+        client,
+        "analysis_get_flooding_summary",
+        {"session_id": session_id, "min_flood_volume": 0.0},
+        retry_safe=True,
     )
     flooded = [f for f in flooding if f.get("total_flood_volume", 0) > 0]
     return {

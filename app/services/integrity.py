@@ -11,6 +11,7 @@ field names and the overall_status thresholds below are both honest."""
 from __future__ import annotations
 
 from app.mcp.client import MCPClient
+from app.services.dispatcher import call_upstream_tool
 
 
 def _to_pct(fraction: float | None) -> float | None:
@@ -18,7 +19,9 @@ def _to_pct(fraction: float | None) -> float | None:
 
 
 async def get_integrity(client: MCPClient, session_id: str) -> dict:
-    balance = await client.call_tool("analysis_get_mass_balance", {"session_id": session_id})
+    balance = await call_upstream_tool(
+        client, "analysis_get_mass_balance", {"session_id": session_id}, retry_safe=True
+    )
 
     routing_stats = balance.get("routing_stats") or {}
     pct_not_converged = routing_stats.get("pct_not_converged")

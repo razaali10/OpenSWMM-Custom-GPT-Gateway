@@ -12,11 +12,16 @@ field names don't carry a _pct suffix themselves."""
 from __future__ import annotations
 
 from app.mcp.client import MCPClient
+from app.services.dispatcher import call_upstream_tool
 
 
 async def compare_scenarios(client: MCPClient, session_id_a: str, session_id_b: str) -> dict:
-    balance_a = await client.call_tool("analysis_get_mass_balance", {"session_id": session_id_a})
-    balance_b = await client.call_tool("analysis_get_mass_balance", {"session_id": session_id_b})
+    balance_a = await call_upstream_tool(
+        client, "analysis_get_mass_balance", {"session_id": session_id_a}, retry_safe=True
+    )
+    balance_b = await call_upstream_tool(
+        client, "analysis_get_mass_balance", {"session_id": session_id_b}, retry_safe=True
+    )
 
     err_a = balance_a.get("routing_continuity_error")
     err_b = balance_b.get("routing_continuity_error")
