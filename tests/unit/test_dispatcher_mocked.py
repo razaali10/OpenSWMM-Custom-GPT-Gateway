@@ -11,7 +11,13 @@ from __future__ import annotations
 import pytest
 
 from app.config import settings
-from app.errors import ToolNotFoundError, UpstreamMCPError, UpstreamTimeoutError, WrongActionGroupError
+from app.errors import (
+    ToolNotFoundError,
+    UpstreamMCPError,
+    UpstreamTimeoutError,
+    ValidationErrorGW,
+    WrongActionGroupError,
+)
 from app.mcp.client import MCPConnectionError, MCPTimeoutError, MCPUpstreamError
 from app.mcp.models import MCPTool
 from app.schemas.tools import ToolCallRequest
@@ -63,7 +69,7 @@ async def test_dispatch_success_returns_result():
     client = FakeClient(result={"node_id": "J1"})
     response = await dispatch(
         "results",
-        ToolCallRequest(tool_name="query_get_node_info", arguments={"session_id": "s1"}),
+        ToolCallRequest(tool_name="query_get_node_info", arguments='{"session_id": "s1"}'),
         registry=registry,
         client=client,
     )
@@ -81,7 +87,7 @@ async def test_dispatch_wrong_group_never_calls_upstream():
     with pytest.raises(WrongActionGroupError) as exc_info:
         await dispatch(
             "results",  # editing_delete_object actually belongs to model-builder
-            ToolCallRequest(tool_name="editing_delete_object", arguments={}),
+            ToolCallRequest(tool_name="editing_delete_object", arguments="{}"),
             registry=registry,
             client=client,
         )
@@ -96,7 +102,7 @@ async def test_dispatch_unknown_tool_is_404():
     with pytest.raises(ToolNotFoundError):
         await dispatch(
             "core",
-            ToolCallRequest(tool_name="does_not_exist", arguments={}),
+            ToolCallRequest(tool_name="does_not_exist", arguments="{}"),
             registry=registry,
             client=client,
         )
@@ -110,7 +116,7 @@ async def test_dispatch_translates_upstream_error():
     with pytest.raises(UpstreamMCPError) as exc_info:
         await dispatch(
             "results",
-            ToolCallRequest(tool_name="query_get_node_info", arguments={}),
+            ToolCallRequest(tool_name="query_get_node_info", arguments="{}"),
             registry=registry,
             client=client,
         )
@@ -125,7 +131,7 @@ async def test_dispatch_translates_timeout():
     with pytest.raises(UpstreamTimeoutError) as exc_info:
         await dispatch(
             "results",
-            ToolCallRequest(tool_name="query_get_node_info", arguments={}),
+            ToolCallRequest(tool_name="query_get_node_info", arguments="{}"),
             registry=registry,
             client=client,
         )
@@ -139,7 +145,7 @@ async def test_dispatch_translates_connection_error():
     with pytest.raises(UpstreamMCPError) as exc_info:
         await dispatch(
             "results",
-            ToolCallRequest(tool_name="query_get_node_info", arguments={}),
+            ToolCallRequest(tool_name="query_get_node_info", arguments="{}"),
             registry=registry,
             client=client,
         )
@@ -160,11 +166,43 @@ async def test_dispatch_uses_simulation_timeout_class():
     client = FakeClient(result={"status": "completed"})
     await dispatch(
         "core",
-        ToolCallRequest(tool_name="lifecycle_run_simulation", arguments={}),
+        ToolCallRequest(tool_name="lifecycle_run_simulation", arguments="{}"),
         registry=registry,
         client=client,
     )
     assert client.calls[0][2] == settings.mcp_simulation_timeout_seconds
+
+
+@pytest.mark.asyncio
+async def test_dispatch_rejects_malformed_json_arguments():
+    # arguments is a JSON-encoded string (see ToolCallRequest's docstring
+    # for why) -- garbage text must fail cleanly before ever reaching the
+    # upstream client, not crash or silently forward the raw string.
+    registry = FakeRegistry({"query_get_node_info": READ_TOOL})
+    client = FakeClient(result="should never be reached")
+    with pytest.raises(ValidationErrorGW) as exc_info:
+        await dispatch(
+            "results",
+            ToolCallRequest(tool_name="query_get_node_info", arguments="{not valid json"),
+            registry=registry,
+            client=client,
+        )
+    assert exc_info.value.status_code == 422
+    assert client.calls == []
+
+
+@pytest.mark.asyncio
+async def test_dispatch_rejects_non_object_json_arguments():
+    registry = FakeRegistry({"query_get_node_info": READ_TOOL})
+    client = FakeClient(result="should never be reached")
+    with pytest.raises(ValidationErrorGW):
+        await dispatch(
+            "results",
+            ToolCallRequest(tool_name="query_get_node_info", arguments="[1, 2, 3]"),
+            registry=registry,
+            client=client,
+        )
+    assert client.calls == []
 
 
 @pytest.mark.asyncio
@@ -181,7 +219,7 @@ async def test_dispatch_uses_optimization_timeout_class():
     client = FakeClient(result={"job_id": "abc"})
     await dispatch(
         "optimization",
-        ToolCallRequest(tool_name="gym_start_optimization", arguments={}),
+        ToolCallRequest(tool_name="gym_start_optimization", arguments="{}"),
         registry=registry,
         client=client,
     )

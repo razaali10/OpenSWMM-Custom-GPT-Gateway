@@ -11,16 +11,44 @@ happen -- the per-group API routers are thin wrappers that only fix
 
 from __future__ import annotations
 
+import json
 import logging
 
 from app.config import settings
-from app.errors import ToolNotFoundError, UpstreamMCPError, UpstreamTimeoutError, WrongActionGroupError
+from app.errors import (
+    ToolNotFoundError,
+    UpstreamMCPError,
+    UpstreamTimeoutError,
+    ValidationErrorGW,
+    WrongActionGroupError,
+)
 from app.logging_config import tool_name_var
 from app.mcp.client import MCPClient, MCPConnectionError, MCPTimeoutError, MCPUpstreamError
 from app.mcp.registry import MCPToolRegistry
 from app.schemas.tools import ToolCallRequest, ToolCallResponse
 
 logger = logging.getLogger("openswmm_gateway.dispatcher")
+
+
+def _parse_arguments(raw: str) -> dict:
+    """`arguments` arrives as a JSON-encoded string, not a nested object --
+    see ToolCallRequest's docstring for why (a bare `additionalProperties:
+    true` object schema is effectively unfillable through ChatGPT's Actions
+    layer, confirmed via repeated live testing)."""
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ValidationErrorGW(
+            "'arguments' must be a JSON-encoded object string, e.g. "
+            '\'{"session_id": "my_session"}\'. Got invalid JSON: ' + str(exc),
+            {"arguments": raw},
+        ) from exc
+    if not isinstance(parsed, dict):
+        raise ValidationErrorGW(
+            "'arguments' must decode to a JSON object, not a list/string/number.",
+            {"arguments": raw},
+        )
+    return parsed
 
 
 def _timeout_for(operation_class: str) -> float:
@@ -55,9 +83,10 @@ async def dispatch(
         )
 
     timeout = _timeout_for(tool.operation_class or "READ")
+    arguments = _parse_arguments(request.arguments)
 
     try:
-        result = await client.call_tool(request.tool_name, request.arguments, timeout=timeout)
+        result = await client.call_tool(request.tool_name, arguments, timeout=timeout)
     except MCPTimeoutError as exc:
         raise UpstreamTimeoutError(str(exc), {"tool_name": request.tool_name}) from exc
     except MCPUpstreamError as exc:
