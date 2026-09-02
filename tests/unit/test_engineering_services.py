@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.services import flooding, integrity, model
+from app.services import flooding, integrity, model, scenario
 
 
 class FakeClient:
@@ -63,17 +63,21 @@ async def test_validate_model_invalid_when_errors_present():
 
 @pytest.mark.asyncio
 async def test_integrity_acceptable_below_5_pct():
+    # analysis_get_mass_balance reports these as fractions of total inflow
+    # (0.003 == 0.3%), not percent -- get_integrity must convert.
     client = FakeClient(
         {
             "analysis_get_mass_balance": {
-                "runoff_continuity_error": 0.3,
-                "routing_continuity_error": -0.4,
+                "runoff_continuity_error": 0.003,
+                "routing_continuity_error": -0.004,
                 "routing_stats": {"pct_not_converged": 0.5},
                 "max_courant": 0.7,
             }
         }
     )
     result = await integrity.get_integrity(client, "s1")
+    assert result["runoff_continuity_error_pct"] == pytest.approx(0.3)
+    assert result["routing_continuity_error_pct"] == pytest.approx(-0.4)
     assert result["overall_status"] == "acceptable"
 
 
@@ -82,14 +86,15 @@ async def test_integrity_poor_above_10_pct():
     client = FakeClient(
         {
             "analysis_get_mass_balance": {
-                "runoff_continuity_error": 15.0,
-                "routing_continuity_error": 2.0,
+                "runoff_continuity_error": 0.15,
+                "routing_continuity_error": 0.02,
                 "routing_stats": {},
                 "max_courant": None,
             }
         }
     )
     result = await integrity.get_integrity(client, "s1")
+    assert result["runoff_continuity_error_pct"] == pytest.approx(15.0)
     assert result["overall_status"] == "poor"
 
 
@@ -110,6 +115,26 @@ async def test_integrity_unknown_with_no_data():
 
 
 @pytest.mark.asyncio
+async def test_compare_scenarios_converts_fraction_to_pct():
+    class TwoSessionFakeClient:
+        def __init__(self, by_session: dict[str, dict]) -> None:
+            self._by_session = by_session
+
+        async def call_tool(self, tool_name, arguments, *, timeout=None):
+            return self._by_session[arguments["session_id"]]
+
+    client = TwoSessionFakeClient(
+        {
+            "s1": {"routing_continuity_error": 0.003},
+            "s2": {"routing_continuity_error": -0.12},
+        }
+    )
+    result = await scenario.compare_scenarios(client, "s1", "s2")
+    assert result["routing_continuity_error_a"] == pytest.approx(0.3)
+    assert result["routing_continuity_error_b"] == pytest.approx(-12.0)
+
+
+@pytest.mark.asyncio
 async def test_flooding_analysis_filters_zero_volume_and_sorts_descending():
     client = FakeClient(
         {
@@ -123,3 +148,8 @@ async def test_flooding_analysis_filters_zero_volume_and_sorts_descending():
     result = await flooding.analyze_flooding(client, "s1")
     assert result["flooded_node_count"] == 2
     assert [n["node_id"] for n in result["flooded_nodes"]] == ["J3", "J2"]
+    # time_flooded comes back from the engine in seconds; the gateway
+    # reports hours.
+    j3, j2 = result["flooded_nodes"]
+    assert j3["time_flooded"] == pytest.approx(900 / 3600.0)
+    assert j2["time_flooded"] == pytest.approx(300 / 3600.0)
