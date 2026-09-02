@@ -26,7 +26,16 @@ class ToolCallRequest(BaseModel):
     to the upstream tool (see app/services/dispatcher.py). Include every
     key from the tool's own input_schema (via getOpenSwmmToolSchema) that
     you want to set -- there is no allow-list and nothing is
-    special-cased or rejected, session_id included."""
+    special-cased or rejected, session_id included.
+
+    `arguments` has no default (required, even for a no-argument call --
+    pass '{}') on purpose: a later live retest after the string-typed fix
+    above still showed the model silently falling back to an empty/default
+    payload instead of composing the requested session_id -- it never
+    re-tried the failing call, it just accepted its own empty result.
+    Removing the default and marking the field required is meant to close
+    that specific failure mode by making the model responsible for typing
+    out a real value on every call, not something it can quietly skip."""
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -48,11 +57,14 @@ class ToolCallRequest(BaseModel):
 
     tool_name: str
     arguments: str = Field(
-        default="{}",
         description=(
-            "JSON-encoded object of the tool's arguments, e.g. "
+            "REQUIRED. JSON-encoded object of the tool's arguments, e.g. "
             '\'{"session_id": "my_session"}\'. Not a nested JSON object -- '
-            "a string containing JSON text. See examples."
+            "a string containing JSON text. Pass '{}' only if the tool "
+            "genuinely takes no arguments -- if the user specified any "
+            "value (a session_id, an ID, a number...), it MUST appear "
+            "inside this JSON string or the call will use the tool's own "
+            "defaults instead of what was asked for. See examples."
         ),
     )
 
